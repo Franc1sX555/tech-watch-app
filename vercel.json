@@ -1,0 +1,20 @@
+{
+  "rewrites": [
+    {
+      "source": "/yahoo/(.*)",
+      "destination": "/api/yahoo/$1"
+    },
+    {
+      "source": "/okx/(.*)",
+      "destination": "/api/okx/$1"
+    },
+    {
+      "source": "/translate/(.*)",
+      "destination": "/api/translate/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
