@@ -1,9 +1,41 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#0d1117"/>
-  <path d="M92 336h328" stroke="#2f3a48" stroke-width="24" stroke-linecap="round"/>
-  <path d="M112 318l72-78 54 44 82-116 80 78" fill="none" stroke="#58a6ff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="184" cy="240" r="18" fill="#3fb950"/>
-  <circle cx="238" cy="284" r="18" fill="#3fb950"/>
-  <circle cx="320" cy="168" r="18" fill="#3fb950"/>
-  <text x="256" y="404" text-anchor="middle" font-family="Arial, sans-serif" font-size="54" font-weight="800" fill="#eef4ff">3x</text>
+  <defs>
+    <linearGradient id="bg" x1="80" x2="432" y1="36" y2="476" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#05080d"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity=".35"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <g opacity=".34">
+    <path d="M74 356h364M74 284h364M74 212h364M74 140h364" stroke="#2d3748" stroke-width="6"/>
+    <path d="M126 86v336M212 86v336M298 86v336M384 86v336" stroke="#2d3748" stroke-width="6"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <path d="M88 355c42-62 80-92 118-88 30 3 48 28 76 20 36-10 52-64 88-78 20-8 40-2 62 12" fill="none" stroke="#37d67a" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M386 164l54 50-72 18z" fill="#37d67a"/>
+  </g>
+
+  <g stroke="#37d67a" stroke-linecap="round" stroke-width="12">
+    <path d="M132 296v82"/>
+    <path d="M112 320h40v34h-40z" fill="#37d67a" stroke="none"/>
+    <path d="M206 232v104"/>
+    <path d="M186 262h40v46h-40z" fill="#37d67a" stroke="none"/>
+    <path d="M292 190v92"/>
+    <path d="M272 210h40v42h-40z" fill="#37d67a" stroke="none"/>
+  </g>
+
+  <g transform="translate(302 276)">
+    <circle cx="78" cy="78" r="72" fill="#ffd84d" stroke="#f0b429" stroke-width="8"/>
+    <path d="M42 50l9 20 22 2-17 14 5 22-19-12-19 12 5-22-17-14 22-2z" fill="#111827"/>
+    <path d="M114 50l9 20 22 2-17 14 5 22-19-12-19 12 5-22-17-14 22-2z" fill="#111827"/>
+    <path d="M44 114c18 20 50 28 78 0" fill="none" stroke="#111827" stroke-width="10" stroke-linecap="round"/>
+  </g>
+
+  <text x="88" y="132" font-family="Arial, sans-serif" font-size="46" font-weight="900" fill="#e5eefb">3x</text>
 </svg>
