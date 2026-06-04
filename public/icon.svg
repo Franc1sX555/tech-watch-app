@@ -1,41 +1,55 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bg" x1="80" x2="432" y1="36" y2="476" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#111827"/>
-      <stop offset="1" stop-color="#05080d"/>
+    <radialGradient id="glow" cx="50%" cy="42%" r="62%">
+      <stop offset="0" stop-color="#123824" stop-opacity=".52"/>
+      <stop offset=".48" stop-color="#07130d" stop-opacity=".82"/>
+      <stop offset="1" stop-color="#000000"/>
+    </radialGradient>
+    <linearGradient id="line" x1="82" x2="430" y1="348" y2="138" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1f8f55"/>
+      <stop offset=".55" stop-color="#44d17c"/>
+      <stop offset="1" stop-color="#b2ffcc"/>
     </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity=".35"/>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
     </filter>
   </defs>
 
-  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="96" fill="#000000"/>
+  <rect width="512" height="512" rx="96" fill="url(#glow)"/>
 
-  <g opacity=".34">
-    <path d="M74 356h364M74 284h364M74 212h364M74 140h364" stroke="#2d3748" stroke-width="6"/>
-    <path d="M126 86v336M212 86v336M298 86v336M384 86v336" stroke="#2d3748" stroke-width="6"/>
+  <g opacity=".22">
+    <path d="M74 374h364M74 306h364M74 238h364M74 170h364M74 102h364" stroke="#5b677a" stroke-width="4"/>
+    <path d="M108 82v346M176 82v346M244 82v346M312 82v346M380 82v346" stroke="#5b677a" stroke-width="4"/>
   </g>
 
-  <g filter="url(#shadow)">
-    <path d="M88 355c42-62 80-92 118-88 30 3 48 28 76 20 36-10 52-64 88-78 20-8 40-2 62 12" fill="none" stroke="#37d67a" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M386 164l54 50-72 18z" fill="#37d67a"/>
+  <g opacity=".86" stroke-linecap="round">
+    <path d="M116 326v58" stroke="#43d17c" stroke-width="10"/>
+    <rect x="102" y="342" width="28" height="26" rx="6" fill="#43d17c"/>
+
+    <path d="M174 278v78" stroke="#43d17c" stroke-width="10"/>
+    <rect x="160" y="304" width="28" height="32" rx="6" fill="#43d17c"/>
+
+    <path d="M232 292v64" stroke="#ff6b6b" stroke-width="10"/>
+    <rect x="218" y="304" width="28" height="30" rx="6" fill="#ff6b6b"/>
+
+    <path d="M290 226v94" stroke="#43d17c" stroke-width="10"/>
+    <rect x="276" y="258" width="28" height="40" rx="6" fill="#43d17c"/>
+
+    <path d="M348 180v106" stroke="#43d17c" stroke-width="10"/>
+    <rect x="334" y="216" width="28" height="44" rx="6" fill="#43d17c"/>
   </g>
 
-  <g stroke="#37d67a" stroke-linecap="round" stroke-width="12">
-    <path d="M132 296v82"/>
-    <path d="M112 320h40v34h-40z" fill="#37d67a" stroke="none"/>
-    <path d="M206 232v104"/>
-    <path d="M186 262h40v46h-40z" fill="#37d67a" stroke="none"/>
-    <path d="M292 190v92"/>
-    <path d="M272 210h40v42h-40z" fill="#37d67a" stroke="none"/>
+  <g filter="url(#softGlow)">
+    <path d="M92 360c42-58 82-86 121-82 34 4 50 31 82 21 38-12 58-75 100-96 18-9 36-11 55-6" fill="none" stroke="url(#line)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M403 160l48 34-58 25z" fill="#b2ffcc"/>
   </g>
 
-  <g transform="translate(302 276)">
-    <circle cx="78" cy="78" r="72" fill="#ffd84d" stroke="#f0b429" stroke-width="8"/>
-    <path d="M42 50l9 20 22 2-17 14 5 22-19-12-19 12 5-22-17-14 22-2z" fill="#111827"/>
-    <path d="M114 50l9 20 22 2-17 14 5 22-19-12-19 12 5-22-17-14 22-2z" fill="#111827"/>
-    <path d="M44 114c18 20 50 28 78 0" fill="none" stroke="#111827" stroke-width="10" stroke-linecap="round"/>
-  </g>
-
-  <text x="88" y="132" font-family="Arial, sans-serif" font-size="46" font-weight="900" fill="#e5eefb">3x</text>
+  <circle cx="395" cy="202" r="9" fill="#eafff0"/>
+  <circle cx="296" cy="298" r="7" fill="#b2ffcc"/>
+  <circle cx="213" cy="278" r="6" fill="#43d17c"/>
 </svg>
