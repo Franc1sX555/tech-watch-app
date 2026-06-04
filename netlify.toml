@@ -1,0 +1,24 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/yahoo/*"
+  to = "/.netlify/functions/yahoo/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/okx/*"
+  to = "/.netlify/functions/okx/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/translate/*"
+  to = "/.netlify/functions/translate/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
