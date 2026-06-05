@@ -216,15 +216,20 @@ button {
 
 .tickerGrid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 8px;
 }
 
 .tickerCard {
+  grid-column: span 2;
   border: 1px solid #2f3a48;
   border-radius: 8px;
   padding: 12px 10px;
   background: #0f1520;
+}
+
+.tickerCard.benchmark {
+  grid-column: span 3;
 }
 
 .tickerCard strong {
@@ -727,6 +732,11 @@ button {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .tickerCard,
+  .tickerCard.benchmark {
+    grid-column: span 1;
+  }
+
   .inputs,
   .inputs.five {
     grid-template-columns: repeat(2, 1fr);
@@ -740,5 +750,10 @@ button {
 
   .tickerGrid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tickerCard,
+  .tickerCard.benchmark {
+    grid-column: span 1;
   }
 }

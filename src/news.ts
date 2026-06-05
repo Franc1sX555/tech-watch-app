@@ -10,6 +10,12 @@ export type NewsItem = {
 
 const trackedSymbols = ["VRT", "MRVL", "COHR"];
 
+const companyNames: Record<string, string> = {
+  VRT: "Vertiv",
+  MRVL: "Marvell",
+  COHR: "Coherent",
+};
+
 const relevanceKeywords: Record<string, string[]> = {
   VRT: ["vertiv", "vrt", "data center power", "liquid cooling", "thermal management", "cooling", "power systems"],
   MRVL: ["marvell", "mrvl", "custom silicon", "custom chip", "asic", "pam4", "interconnect", "electro-optics"],
@@ -90,9 +96,9 @@ function isRelevant(symbol: string, item: YahooSearchNewsItem) {
   return related.includes(symbol) || keywords.some((keyword) => title.includes(keyword));
 }
 
-async function fetchSymbolNews(symbol: string): Promise<NewsItem[]> {
+async function fetchYahooSearchNews(query: string): Promise<YahooSearchNewsItem[]> {
   const params = new URLSearchParams({
-    q: `${symbol} AI data center`,
+    q: query,
     quotesCount: "0",
     newsCount: "10",
     listsCount: "0",
@@ -101,14 +107,33 @@ async function fetchSymbolNews(symbol: string): Promise<NewsItem[]> {
     lang: "en-US",
   });
   const response = await fetch(`/yahoo/v1/finance/search?${params.toString()}`);
-  if (!response.ok) throw new Error(`news ${symbol} ${response.status}`);
+  if (!response.ok) throw new Error(`news ${query} ${response.status}`);
 
   const data = await response.json();
-  const items = (data?.news ?? []) as YahooSearchNewsItem[];
+  return (data?.news ?? []) as YahooSearchNewsItem[];
+}
+
+async function fetchSymbolNews(symbol: string): Promise<NewsItem[]> {
+  const company = companyNames[symbol] ?? symbol;
+  const searches = await Promise.allSettled([
+    fetchYahooSearchNews(`${symbol} stock`),
+    fetchYahooSearchNews(`${company} AI data center`),
+    fetchYahooSearchNews(`${company} earnings analyst`),
+  ]);
+
+  const rawItems = searches.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
+  const unique = new Map<string, YahooSearchNewsItem>();
+  rawItems.forEach((item) => {
+    const key = item.link || item.uuid || item.title;
+    if (key && !unique.has(key)) unique.set(key, item);
+  });
+
+  const items = Array.from(unique.values());
   const relevantItems = items.filter((item) => isRelevant(symbol, item));
+  const usableItems = relevantItems.length > 0 ? relevantItems : items.slice(0, 3);
 
   const mapped = await Promise.all(
-    relevantItems.slice(0, 8).map(async (item, index) => {
+    usableItems.slice(0, 8).map(async (item, index) => {
       const title = cleanText(item.title ?? `${symbol} news`);
       const link = item.link ?? "";
       if (!link || !title) return null;
@@ -121,7 +146,7 @@ async function fetchSymbolNews(symbol: string): Promise<NewsItem[]> {
         source: cleanText(item.publisher ?? new URL(link).hostname.replace(/^www\./, "")),
         subject: `${symbol} / ${tags[0]}`,
         title: translatedTitle,
-        summary: `【${tags.join("、")}】${translatedTitle}`,
+        summary: `【${tags.join("、")}】主旨：${translatedTitle}`,
         url: link,
       };
     }),

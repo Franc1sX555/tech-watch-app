@@ -79,6 +79,12 @@ function pctChange(quote: YahooQuote) {
   return ((quote.price - quote.previousClose) / quote.previousClose) * 100;
 }
 
+function normalizeTenYearYield(value: number) {
+  // Yahoo's ^TNX is sometimes represented as 45.0 for 4.50%, but some
+  // endpoints return 4.50 directly. Normalize both forms to percentage points.
+  return value > 20 ? value / 10 : value;
+}
+
 async function fetchYahooQuote(symbol: string): Promise<YahooQuote> {
   const url = `/yahoo/v8/finance/chart/${encodeURIComponent(symbol)}?range=1d&interval=1m&includePrePost=false`;
   const response = await fetch(url);
@@ -193,8 +199,8 @@ export async function loadMarketSnapshot(): Promise<SnapshotResult> {
       fetchYahooQuote(yahooSymbols.DXY),
     ]);
 
-    const tenYearYield = tnx.price / 10;
-    const previousTenYearYield = tnx.previousClose / 10;
+    const tenYearYield = normalizeTenYearYield(tnx.price);
+    const previousTenYearYield = normalizeTenYearYield(tnx.previousClose);
     let okxContracts: OkxContractQuote[] = [];
 
     try {

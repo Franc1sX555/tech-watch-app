@@ -210,28 +210,28 @@ function buildResult(snapshot: MarketSnapshot) {
 
   let action = "中性，持有不加仓";
   let totalExposure = 57;
-  let target: Record<CoreSymbol | "CASH", number> = { VRT: 20, MRVL: 18, COHR: 19, CASH: 43 };
+  let target: Record<CoreSymbol | "CASH", number> = { VRT: 23, MRVL: 17, COHR: 17, CASH: 43 };
 
   if (score >= 85) {
     action = "强势进攻，可加仓但保留现金";
     totalExposure = 75;
-    target = { VRT: 26, MRVL: 23, COHR: 26, CASH: 25 };
+    target = { VRT: 30, MRVL: 23, COHR: 22, CASH: 25 };
   } else if (score >= 70) {
     action = "偏强，小幅加仓或继续持有";
     totalExposure = 65;
-    target = { VRT: 23, MRVL: 20, COHR: 22, CASH: 35 };
+    target = { VRT: 26, MRVL: 20, COHR: 19, CASH: 35 };
   } else if (score >= 55) {
     action = "中性，持有不加仓";
     totalExposure = 57;
-    target = { VRT: 20, MRVL: 18, COHR: 19, CASH: 43 };
+    target = { VRT: 23, MRVL: 17, COHR: 17, CASH: 43 };
   } else if (score >= 40) {
     action = "偏弱，减仓20%-30%";
     totalExposure = 40;
-    target = { VRT: 14, MRVL: 12, COHR: 14, CASH: 60 };
+    target = { VRT: 16, MRVL: 12, COHR: 12, CASH: 60 };
   } else {
     action = "高风险，降至轻仓或空仓";
     totalExposure = 15;
-    target = { VRT: 6, MRVL: 4, COHR: 5, CASH: 85 };
+    target = { VRT: 6, MRVL: 5, COHR: 4, CASH: 85 };
   }
 
   const smhVsQqq = snapshot.smhChange - snapshot.qqqChange;
@@ -267,6 +267,7 @@ function App() {
   const [newsSource, setNewsSource] = useState("初始备用资讯");
   const [newsErrors, setNewsErrors] = useState<string[]>([]);
   const [newsPage, setNewsPage] = useState(0);
+  const [showAllEvents, setShowAllEvents] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [accountValue, setAccountValue] = useState(10_000);
   const [currentPositions, setCurrentPositions] = useState<Record<CoreSymbol, number>>({
@@ -352,6 +353,7 @@ function App() {
     if (chunk.length === 3) return chunk;
     return [...chunk, ...newsItems.slice(0, 3 - chunk.length)];
   }, [newsItems, newsPage]);
+  const visibleEvents = showAllEvents ? majorEvents : majorEvents.slice(0, 5);
 
   const updatedAtText = marketResult.fetchedAt.toLocaleTimeString("zh-CN", {
     hour12: false,
@@ -395,7 +397,7 @@ function App() {
         <h2>持仓与基准看板</h2>
         <div className="tickerGrid">
           {holdingsBoard.map((item) => (
-            <div className="tickerCard" key={item.symbol}>
+            <div className={item.symbol === "QQQ" || item.symbol === "SMH" ? "tickerCard benchmark" : "tickerCard"} key={item.symbol}>
               <div>
                 <strong>{item.symbol}</strong>
                 <span>{item.role}</span>
@@ -481,6 +483,9 @@ function App() {
 
       <section className="panel">
         <h2>目标配置</h2>
+        <p className="hint">
+          当前按持仓内权重 VRT 40% / MRVL 30% / COHR 30% 分配，再根据总评分调整整体3x暴露。
+        </p>
         <div className="allocations">
           {coreSymbols.map((symbol) => (
             <div key={symbol}>
@@ -540,9 +545,14 @@ function App() {
       </section>
 
       <section className="panel">
-        <h2>重大事件日历</h2>
+        <div className="panelHeader">
+          <h2>重大事件日历</h2>
+          <button className="miniButton" onClick={() => setShowAllEvents((value) => !value)}>
+            {showAllEvents ? "收起" : "查看更多"}
+          </button>
+        </div>
         <div className="eventList">
-          {majorEvents.map((event) => (
+          {visibleEvents.map((event) => (
             <a href={event.url} target="_blank" rel="noreferrer" className="eventItem" key={`${event.date}-${event.title}`}>
               <div className="eventDate">
                 <strong>{event.date.slice(5)}</strong>
