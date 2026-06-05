@@ -54,6 +54,7 @@ export const fallbackSnapshot: MarketSnapshot = {
 type YahooQuote = {
   price: number;
   previousClose: number;
+  changePercent: number;
 };
 
 const yahooSymbols = {
@@ -69,27 +70,39 @@ const yahooSymbols = {
 };
 
 function pctChange(quote: YahooQuote) {
+  if (Number.isFinite(quote.changePercent)) return quote.changePercent;
   if (!Number.isFinite(quote.previousClose) || quote.previousClose === 0) return 0;
   return ((quote.price - quote.previousClose) / quote.previousClose) * 100;
 }
 
-async function fetchYahooQuote(symbol: string): Promise<YahooQuote> {
-  const url = `/yahoo/v8/finance/chart/${encodeURIComponent(symbol)}?range=5d&interval=1d`;
+async function fetchYahooQuotes(symbols: string[]): Promise<Record<string, YahooQuote>> {
+  const url = `/yahoo/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(","))}`;
   const response = await fetch(url);
-  if (!response.ok) throw new Error(`${symbol} ${response.status}`);
+  if (!response.ok) throw new Error(`Yahoo quote ${response.status}`);
 
   const data = await response.json();
-  const result = data?.chart?.result?.[0];
-  const meta = result?.meta;
-  const closes = result?.indicators?.quote?.[0]?.close?.filter((value: number | null) => value != null);
-  const price = Number(meta?.regularMarketPrice ?? closes?.at(-1));
-  const previousClose = Number(meta?.chartPreviousClose ?? closes?.at(-2));
+  const results = data?.quoteResponse?.result ?? [];
+  const quotes: Record<string, YahooQuote> = {};
 
-  if (!Number.isFinite(price) || !Number.isFinite(previousClose)) {
-    throw new Error(`${symbol} quote missing`);
-  }
+  results.forEach((result: Record<string, unknown>) => {
+    const symbol = String(result.symbol);
+    const price = Number(result.regularMarketPrice);
+    const previousClose = Number(result.regularMarketPreviousClose);
+    const changePercent = Number(result.regularMarketChangePercent);
 
-  return { price, previousClose };
+    if (!symbol || !Number.isFinite(price)) return;
+    quotes[symbol] = {
+      price,
+      previousClose,
+      changePercent,
+    };
+  });
+
+  symbols.forEach((symbol) => {
+    if (!quotes[symbol]) throw new Error(`${symbol} quote missing`);
+  });
+
+  return quotes;
 }
 
 type OkxInstrument = {
@@ -174,17 +187,26 @@ export async function loadMarketSnapshot(): Promise<SnapshotResult> {
   const errors: string[] = [];
 
   try {
-    const [qqq, smh, vrt, mrvl, cohr, nvda, vix, tnx, dxy] = await Promise.all([
-      fetchYahooQuote(yahooSymbols.QQQ),
-      fetchYahooQuote(yahooSymbols.SMH),
-      fetchYahooQuote(yahooSymbols.VRT),
-      fetchYahooQuote(yahooSymbols.MRVL),
-      fetchYahooQuote(yahooSymbols.COHR),
-      fetchYahooQuote(yahooSymbols.NVDA),
-      fetchYahooQuote(yahooSymbols.VIX),
-      fetchYahooQuote(yahooSymbols.TNX),
-      fetchYahooQuote(yahooSymbols.DXY),
+    const quotes = await fetchYahooQuotes([
+      yahooSymbols.QQQ,
+      yahooSymbols.SMH,
+      yahooSymbols.VRT,
+      yahooSymbols.MRVL,
+      yahooSymbols.COHR,
+      yahooSymbols.NVDA,
+      yahooSymbols.VIX,
+      yahooSymbols.TNX,
+      yahooSymbols.DXY,
     ]);
+    const qqq = quotes[yahooSymbols.QQQ];
+    const smh = quotes[yahooSymbols.SMH];
+    const vrt = quotes[yahooSymbols.VRT];
+    const mrvl = quotes[yahooSymbols.MRVL];
+    const cohr = quotes[yahooSymbols.COHR];
+    const nvda = quotes[yahooSymbols.NVDA];
+    const vix = quotes[yahooSymbols.VIX];
+    const tnx = quotes[yahooSymbols.TNX];
+    const dxy = quotes[yahooSymbols.DXY];
 
     const tenYearYield = tnx.price / 10;
     const previousTenYearYield = tnx.previousClose / 10;
