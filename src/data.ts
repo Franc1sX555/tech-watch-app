@@ -1,7 +1,9 @@
 export type CoreSymbol = "VRT" | "MRVL" | "COHR";
 
 export type MarketSnapshot = {
+  qqqPrice: number;
   qqqChange: number;
+  smhPrice: number;
   smhChange: number;
   vrtPrice: number;
   vrtChange: number;
@@ -35,7 +37,9 @@ export type SnapshotResult = {
 };
 
 export const fallbackSnapshot: MarketSnapshot = {
+  qqqPrice: 540,
   qqqChange: 0.4,
+  smhPrice: 285,
   smhChange: 0.7,
   vrtPrice: 124.5,
   vrtChange: 1.1,
@@ -75,34 +79,24 @@ function pctChange(quote: YahooQuote) {
   return ((quote.price - quote.previousClose) / quote.previousClose) * 100;
 }
 
-async function fetchYahooQuotes(symbols: string[]): Promise<Record<string, YahooQuote>> {
-  const url = `/yahoo/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(","))}`;
+async function fetchYahooQuote(symbol: string): Promise<YahooQuote> {
+  const url = `/yahoo/v8/finance/chart/${encodeURIComponent(symbol)}?range=1d&interval=1m&includePrePost=false`;
   const response = await fetch(url);
-  if (!response.ok) throw new Error(`Yahoo quote ${response.status}`);
+  if (!response.ok) throw new Error(`${symbol} ${response.status}`);
 
   const data = await response.json();
-  const results = data?.quoteResponse?.result ?? [];
-  const quotes: Record<string, YahooQuote> = {};
+  const result = data?.chart?.result?.[0];
+  const meta = result?.meta;
+  const closes = result?.indicators?.quote?.[0]?.close?.filter((value: number | null) => value != null);
+  const price = Number(meta?.regularMarketPrice ?? closes?.at(-1));
+  const previousClose = Number(meta?.previousClose ?? meta?.chartPreviousClose);
+  const changePercent = Number(meta?.regularMarketChangePercent);
 
-  results.forEach((result: Record<string, unknown>) => {
-    const symbol = String(result.symbol);
-    const price = Number(result.regularMarketPrice);
-    const previousClose = Number(result.regularMarketPreviousClose);
-    const changePercent = Number(result.regularMarketChangePercent);
+  if (!Number.isFinite(price) || !Number.isFinite(previousClose)) {
+    throw new Error(`${symbol} quote missing`);
+  }
 
-    if (!symbol || !Number.isFinite(price)) return;
-    quotes[symbol] = {
-      price,
-      previousClose,
-      changePercent,
-    };
-  });
-
-  symbols.forEach((symbol) => {
-    if (!quotes[symbol]) throw new Error(`${symbol} quote missing`);
-  });
-
-  return quotes;
+  return { price, previousClose, changePercent };
 }
 
 type OkxInstrument = {
@@ -187,26 +181,17 @@ export async function loadMarketSnapshot(): Promise<SnapshotResult> {
   const errors: string[] = [];
 
   try {
-    const quotes = await fetchYahooQuotes([
-      yahooSymbols.QQQ,
-      yahooSymbols.SMH,
-      yahooSymbols.VRT,
-      yahooSymbols.MRVL,
-      yahooSymbols.COHR,
-      yahooSymbols.NVDA,
-      yahooSymbols.VIX,
-      yahooSymbols.TNX,
-      yahooSymbols.DXY,
+    const [qqq, smh, vrt, mrvl, cohr, nvda, vix, tnx, dxy] = await Promise.all([
+      fetchYahooQuote(yahooSymbols.QQQ),
+      fetchYahooQuote(yahooSymbols.SMH),
+      fetchYahooQuote(yahooSymbols.VRT),
+      fetchYahooQuote(yahooSymbols.MRVL),
+      fetchYahooQuote(yahooSymbols.COHR),
+      fetchYahooQuote(yahooSymbols.NVDA),
+      fetchYahooQuote(yahooSymbols.VIX),
+      fetchYahooQuote(yahooSymbols.TNX),
+      fetchYahooQuote(yahooSymbols.DXY),
     ]);
-    const qqq = quotes[yahooSymbols.QQQ];
-    const smh = quotes[yahooSymbols.SMH];
-    const vrt = quotes[yahooSymbols.VRT];
-    const mrvl = quotes[yahooSymbols.MRVL];
-    const cohr = quotes[yahooSymbols.COHR];
-    const nvda = quotes[yahooSymbols.NVDA];
-    const vix = quotes[yahooSymbols.VIX];
-    const tnx = quotes[yahooSymbols.TNX];
-    const dxy = quotes[yahooSymbols.DXY];
 
     const tenYearYield = tnx.price / 10;
     const previousTenYearYield = tnx.previousClose / 10;
@@ -233,7 +218,9 @@ export async function loadMarketSnapshot(): Promise<SnapshotResult> {
       errors,
       okxContracts,
       snapshot: {
+        qqqPrice: qqq.price,
         qqqChange: pctChange(qqq),
+        smhPrice: smh.price,
         smhChange: pctChange(smh),
         vrtPrice: vrt.price,
         vrtChange: pctChange(vrt),

@@ -314,6 +314,18 @@ function App() {
       price: snapshot.cohrPrice,
       change: snapshot.cohrChange,
     },
+    {
+      symbol: "QQQ",
+      role: "纳指100基准",
+      price: snapshot.qqqPrice,
+      change: snapshot.qqqChange,
+    },
+    {
+      symbol: "SMH",
+      role: "半导体基准",
+      price: snapshot.smhPrice,
+      change: snapshot.smhChange,
+    },
   ];
   const currentInvested = coreSymbols.reduce((sum, symbol) => sum + currentPositions[symbol], 0);
   const currentCashValue = Math.max(0, accountValue - currentInvested);
@@ -380,7 +392,7 @@ function App() {
       </section>
 
       <section className="panel">
-        <h2>持仓看板</h2>
+        <h2>持仓与基准看板</h2>
         <div className="tickerGrid">
           {holdingsBoard.map((item) => (
             <div className="tickerCard" key={item.symbol}>

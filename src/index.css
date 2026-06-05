@@ -216,7 +216,7 @@ button {
 
 .tickerGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 8px;
 }
 
@@ -724,7 +724,7 @@ button {
   }
 
   .tickerGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .inputs,
@@ -736,5 +736,9 @@ button {
 @media (min-width: 381px) and (max-width: 520px) {
   .inputs.five {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .tickerGrid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
