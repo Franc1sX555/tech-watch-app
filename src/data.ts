@@ -1,11 +1,15 @@
+export type CoreSymbol = "VRT" | "MRVL" | "COHR";
+
 export type MarketSnapshot = {
   qqqChange: number;
   smhChange: number;
+  vrtPrice: number;
+  vrtChange: number;
+  mrvlPrice: number;
+  mrvlChange: number;
+  cohrPrice: number;
+  cohrChange: number;
   nvdaChange: number;
-  googlChange: number;
-  avgoChange: number;
-  msftChange: number;
-  tslaChange: number;
   vixChange: number;
   tenYearYield: number;
   tenYearYieldChangeBp: number;
@@ -31,18 +35,20 @@ export type SnapshotResult = {
 };
 
 export const fallbackSnapshot: MarketSnapshot = {
-  qqqChange: 0.8,
-  smhChange: 1.3,
-  nvdaChange: 1.7,
-  googlChange: 0.9,
-  avgoChange: 0.4,
-  msftChange: 0.2,
-  tslaChange: -1.1,
-  vixChange: -3.5,
+  qqqChange: 0.4,
+  smhChange: 0.7,
+  vrtPrice: 124.5,
+  vrtChange: 1.1,
+  mrvlPrice: 74.2,
+  mrvlChange: 0.8,
+  cohrPrice: 96.8,
+  cohrChange: 1.4,
+  nvdaChange: 0.9,
+  vixChange: -2.2,
   tenYearYield: 4.82,
   tenYearYieldChangeBp: 2,
   dxyChange: -0.1,
-  okxDeviationPct: 0.3,
+  okxDeviationPct: 0,
 };
 
 type YahooQuote = {
@@ -53,11 +59,10 @@ type YahooQuote = {
 const yahooSymbols = {
   QQQ: "QQQ",
   SMH: "SMH",
+  VRT: "VRT",
+  MRVL: "MRVL",
+  COHR: "COHR",
   NVDA: "NVDA",
-  GOOGL: "GOOGL",
-  AVGO: "AVGO",
-  MSFT: "MSFT",
-  TSLA: "TSLA",
   VIX: "^VIX",
   TNX: "^TNX",
   DXY: "DX-Y.NYB",
@@ -92,7 +97,6 @@ type OkxInstrument = {
   uly?: string;
   instFamily?: string;
   baseCcy?: string;
-  quoteCcy?: string;
   state?: string;
 };
 
@@ -120,12 +124,7 @@ function findOkxInstrument(symbol: string, instruments: OkxInstrument[]) {
   if (exact) return exact;
 
   return live.find((instrument) => {
-    const searchable = [
-      instrument.instId,
-      instrument.uly,
-      instrument.instFamily,
-      instrument.baseCcy,
-    ]
+    const searchable = [instrument.instId, instrument.uly, instrument.instFamily, instrument.baseCcy]
       .filter(Boolean)
       .join(" ")
       .toUpperCase();
@@ -175,25 +174,13 @@ export async function loadMarketSnapshot(): Promise<SnapshotResult> {
   const errors: string[] = [];
 
   try {
-    const [
-      qqq,
-      smh,
-      nvda,
-      googl,
-      avgo,
-      msft,
-      tsla,
-      vix,
-      tnx,
-      dxy,
-    ] = await Promise.all([
+    const [qqq, smh, vrt, mrvl, cohr, nvda, vix, tnx, dxy] = await Promise.all([
       fetchYahooQuote(yahooSymbols.QQQ),
       fetchYahooQuote(yahooSymbols.SMH),
+      fetchYahooQuote(yahooSymbols.VRT),
+      fetchYahooQuote(yahooSymbols.MRVL),
+      fetchYahooQuote(yahooSymbols.COHR),
       fetchYahooQuote(yahooSymbols.NVDA),
-      fetchYahooQuote(yahooSymbols.GOOGL),
-      fetchYahooQuote(yahooSymbols.AVGO),
-      fetchYahooQuote(yahooSymbols.MSFT),
-      fetchYahooQuote(yahooSymbols.TSLA),
       fetchYahooQuote(yahooSymbols.VIX),
       fetchYahooQuote(yahooSymbols.TNX),
       fetchYahooQuote(yahooSymbols.DXY),
@@ -202,13 +189,12 @@ export async function loadMarketSnapshot(): Promise<SnapshotResult> {
     const tenYearYield = tnx.price / 10;
     const previousTenYearYield = tnx.previousClose / 10;
     let okxContracts: OkxContractQuote[] = [];
+
     try {
       okxContracts = await fetchOkxContracts({
-        NVDA: nvda.price,
-        GOOGL: googl.price,
-        AVGO: avgo.price,
-        MSFT: msft.price,
-        TSLA: tsla.price,
+        VRT: vrt.price,
+        MRVL: mrvl.price,
+        COHR: cohr.price,
       });
     } catch (error) {
       errors.push(error instanceof Error ? error.message : "OKX contract scan failed");
@@ -227,11 +213,13 @@ export async function loadMarketSnapshot(): Promise<SnapshotResult> {
       snapshot: {
         qqqChange: pctChange(qqq),
         smhChange: pctChange(smh),
+        vrtPrice: vrt.price,
+        vrtChange: pctChange(vrt),
+        mrvlPrice: mrvl.price,
+        mrvlChange: pctChange(mrvl),
+        cohrPrice: cohr.price,
+        cohrChange: pctChange(cohr),
         nvdaChange: pctChange(nvda),
-        googlChange: pctChange(googl),
-        avgoChange: pctChange(avgo),
-        msftChange: pctChange(msft),
-        tslaChange: pctChange(tsla),
         vixChange: pctChange(vix),
         tenYearYield,
         tenYearYieldChangeBp: (tenYearYield - previousTenYearYield) * 100,

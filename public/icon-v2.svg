@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="42%" r="62%">
+      <stop offset="0" stop-color="#123824" stop-opacity=".52"/>
+      <stop offset=".48" stop-color="#07130d" stop-opacity=".82"/>
+      <stop offset="1" stop-color="#000000"/>
+    </radialGradient>
+    <linearGradient id="line" x1="82" x2="430" y1="348" y2="138" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1f8f55"/>
+      <stop offset=".55" stop-color="#44d17c"/>
+      <stop offset="1" stop-color="#b2ffcc"/>
+    </linearGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="96" fill="#000000"/>
+  <rect width="512" height="512" rx="96" fill="url(#glow)"/>
+
+  <g opacity=".22">
+    <path d="M74 374h364M74 306h364M74 238h364M74 170h364M74 102h364" stroke="#5b677a" stroke-width="4"/>
+    <path d="M108 82v346M176 82v346M244 82v346M312 82v346M380 82v346" stroke="#5b677a" stroke-width="4"/>
+  </g>
+
+  <g opacity=".86" stroke-linecap="round">
+    <path d="M116 326v58" stroke="#43d17c" stroke-width="10"/>
+    <rect x="102" y="342" width="28" height="26" rx="6" fill="#43d17c"/>
+    <path d="M174 278v78" stroke="#43d17c" stroke-width="10"/>
+    <rect x="160" y="304" width="28" height="32" rx="6" fill="#43d17c"/>
+    <path d="M232 292v64" stroke="#ff6b6b" stroke-width="10"/>
+    <rect x="218" y="304" width="28" height="30" rx="6" fill="#ff6b6b"/>
+    <path d="M290 226v94" stroke="#43d17c" stroke-width="10"/>
+    <rect x="276" y="258" width="28" height="40" rx="6" fill="#43d17c"/>
+    <path d="M348 180v106" stroke="#43d17c" stroke-width="10"/>
+    <rect x="334" y="216" width="28" height="44" rx="6" fill="#43d17c"/>
+  </g>
+
+  <g filter="url(#softGlow)">
+    <path d="M92 360c42-58 82-86 121-82 34 4 50 31 82 21 38-12 58-75 100-96 18-9 36-11 55-6" fill="none" stroke="url(#line)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M403 160l48 34-58 25z" fill="#b2ffcc"/>
+  </g>
+
+  <circle cx="395" cy="202" r="9" fill="#eafff0"/>
+  <circle cx="296" cy="298" r="7" fill="#b2ffcc"/>
+  <circle cx="213" cy="278" r="6" fill="#43d17c"/>
+</svg>

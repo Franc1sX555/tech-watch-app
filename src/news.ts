@@ -8,24 +8,31 @@ export type NewsItem = {
   url: string;
 };
 
-const trackedSymbols = ["NVDA", "GOOGL", "AVGO", "MSFT", "TSLA"];
+const trackedSymbols = ["VRT", "MRVL", "COHR"];
 
 const relevanceKeywords: Record<string, string[]> = {
-  NVDA: ["nvidia", "nvda", "tsmc", "gpu", "ai chip", "ai chips", "blackwell", "rubin"],
-  GOOGL: ["google", "alphabet", "googl", "gemini", "waymo", "google cloud"],
-  AVGO: ["broadcom", "avgo", "vmware", "custom chip", "asic", "tomahawk", "jericho"],
-  MSFT: ["microsoft", "msft", "azure", "copilot", "openai"],
-  TSLA: ["tesla", "tsla", "robotaxi", "fsd", "cybercab", "optimus"],
+  VRT: ["vertiv", "vrt", "data center power", "liquid cooling", "thermal management", "cooling", "power systems"],
+  MRVL: ["marvell", "mrvl", "custom silicon", "custom chip", "asic", "pam4", "interconnect", "electro-optics"],
+  COHR: ["coherent", "cohr", "optical", "photonics", "transceiver", "800g", "1.6t", "cpo", "indium phosphide"],
 };
 
-export const fallbackNews: NewsItem[] = [
-  // Keep this empty on purpose. If live news fails, the UI should show a clear
-  // failure state instead of filling the feed with low-value placeholder links.
-];
+export const fallbackNews: NewsItem[] = [];
 
 function cleanText(value: string) {
   const doc = new DOMParser().parseFromString(value, "text/html");
   return (doc.body.textContent ?? value).replace(/\s+/g, " ").trim();
+}
+
+function formatNewsTime(value: string | number) {
+  const date = typeof value === "number" ? new Date(value * 1000) : new Date(value);
+  if (Number.isNaN(date.getTime())) return "时间未知";
+  return date.toLocaleString("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 async function translateToChinese(text: string) {
@@ -49,58 +56,6 @@ async function translateToChinese(text: string) {
   }
 }
 
-function getTags(title: string) {
-  const lower = title.toLowerCase();
-  const tags: string[] = [];
-
-  if (lower.includes("upgrade") || lower.includes("price target") || lower.includes("analyst")) {
-    tags.push("大行观点/目标价");
-  }
-  if (lower.includes("earnings") || lower.includes("revenue") || lower.includes("profit")) {
-    tags.push("财报与业绩");
-  }
-  if (lower.includes("ai") || lower.includes("artificial intelligence")) {
-    tags.push("AI主线");
-  }
-  if (lower.includes("chip") || lower.includes("semiconductor") || lower.includes("data center")) {
-    tags.push("半导体/数据中心");
-  }
-  if (lower.includes("robotaxi") || lower.includes("self-driving") || lower.includes("autonomous")) {
-    tags.push("自动驾驶事件");
-  }
-
-  return tags.length > 0 ? tags : ["公开新闻"];
-}
-
-function isRelevant(symbol: string, item: YahooSearchNewsItem) {
-  const title = (item.title ?? "").toLowerCase();
-  const related = item.relatedTickers ?? [];
-  const keywords = relevanceKeywords[symbol] ?? [symbol.toLowerCase()];
-  const hasKeyword = keywords.some((keyword) => title.includes(keyword));
-  const hasTicker = related.includes(symbol);
-
-  if (hasKeyword) return true;
-  if (!hasTicker) return false;
-
-  const isGenericCryptoOrOther =
-    /\b(hype|hyperliquid|ionq|upstart|berkshire|loan|loans|quantum)\b/i.test(title) &&
-    !keywords.some((keyword) => title.includes(keyword));
-
-  return !isGenericCryptoOrOther;
-}
-
-function formatNewsTime(value: string | number) {
-  const date = typeof value === "number" ? new Date(value * 1000) : new Date(value);
-  if (Number.isNaN(date.getTime())) return "时间未知";
-  return date.toLocaleString("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
-
 type YahooSearchNewsItem = {
   uuid?: string;
   title?: string;
@@ -110,43 +65,67 @@ type YahooSearchNewsItem = {
   relatedTickers?: string[];
 };
 
+function getTags(title: string) {
+  const lower = title.toLowerCase();
+  const tags: string[] = [];
+
+  if (lower.includes("upgrade") || lower.includes("price target") || lower.includes("analyst")) tags.push("大行观点/目标价");
+  if (lower.includes("earnings") || lower.includes("revenue") || lower.includes("margin") || lower.includes("guidance")) {
+    tags.push("财报与指引");
+  }
+  if (lower.includes("ai") || lower.includes("data center")) tags.push("AI数据中心");
+  if (lower.includes("cooling") || lower.includes("power")) tags.push("电力/散热");
+  if (lower.includes("custom") || lower.includes("asic") || lower.includes("interconnect")) tags.push("定制芯片/互联");
+  if (lower.includes("optical") || lower.includes("photonics") || lower.includes("transceiver") || lower.includes("cpo")) {
+    tags.push("光通信");
+  }
+
+  return tags.length > 0 ? tags : ["公开新闻"];
+}
+
+function isRelevant(symbol: string, item: YahooSearchNewsItem) {
+  const title = (item.title ?? "").toLowerCase();
+  const related = item.relatedTickers ?? [];
+  const keywords = relevanceKeywords[symbol] ?? [symbol.toLowerCase()];
+  return related.includes(symbol) || keywords.some((keyword) => title.includes(keyword));
+}
+
 async function fetchSymbolNews(symbol: string): Promise<NewsItem[]> {
   const params = new URLSearchParams({
-    q: symbol,
+    q: `${symbol} AI data center`,
     quotesCount: "0",
-    newsCount: "8",
+    newsCount: "10",
     listsCount: "0",
     enableFuzzyQuery: "false",
     region: "US",
     lang: "en-US",
   });
-  const url = `/yahoo/v1/finance/search?${params.toString()}`;
-  const response = await fetch(url);
+  const response = await fetch(`/yahoo/v1/finance/search?${params.toString()}`);
   if (!response.ok) throw new Error(`news ${symbol} ${response.status}`);
 
   const data = await response.json();
   const items = (data?.news ?? []) as YahooSearchNewsItem[];
-
   const relevantItems = items.filter((item) => isRelevant(symbol, item));
-  const mapped = await Promise.all(
-    relevantItems.slice(0, 6).map(async (item, index) => {
-    const title = cleanText(item.title ?? `${symbol} news`);
-    const link = item.link ?? "";
-    if (!link || !title) return null;
-    const related = item.relatedTickers?.includes(symbol) ? symbol : symbol;
-    const translatedTitle = await translateToChinese(title);
-    const tags = getTags(title);
 
-    return {
-      id: item.uuid ?? `${symbol}-${link}-${index}`,
-      time: formatNewsTime(item.providerPublishTime ?? ""),
-      source: cleanText(item.publisher ?? new URL(link).hostname.replace(/^www\./, "")),
-      subject: `${related} / 公开新闻`,
-      title: translatedTitle,
-      summary: `【${tags.join("、")}】${symbol}相关资讯：${translatedTitle}`,
-      url: link,
-    };
-  }));
+  const mapped = await Promise.all(
+    relevantItems.slice(0, 8).map(async (item, index) => {
+      const title = cleanText(item.title ?? `${symbol} news`);
+      const link = item.link ?? "";
+      if (!link || !title) return null;
+      const translatedTitle = await translateToChinese(title);
+      const tags = getTags(title);
+
+      return {
+        id: item.uuid ?? `${symbol}-${link}-${index}`,
+        time: formatNewsTime(item.providerPublishTime ?? ""),
+        source: cleanText(item.publisher ?? new URL(link).hostname.replace(/^www\./, "")),
+        subject: `${symbol} / ${tags[0]}`,
+        title: translatedTitle,
+        summary: `【${tags.join("、")}】${translatedTitle}`,
+        url: link,
+      };
+    }),
+  );
 
   return mapped.filter((item): item is NewsItem => item != null);
 }

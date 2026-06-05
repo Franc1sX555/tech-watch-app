@@ -214,6 +214,49 @@ button {
   font-size: 24px;
 }
 
+.tickerGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.tickerCard {
+  border: 1px solid #2f3a48;
+  border-radius: 8px;
+  padding: 12px 10px;
+  background: #0f1520;
+}
+
+.tickerCard strong {
+  display: block;
+  font-size: 17px;
+}
+
+.tickerCard span {
+  display: block;
+  min-height: 30px;
+  margin-top: 4px;
+  color: #8b949e;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.tickerCard b {
+  display: block;
+  margin-top: 12px;
+  color: #eef4ff;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.tickerCard em {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 800;
+}
+
 .hint {
   margin: -2px 0 12px;
   color: #8b949e;
@@ -516,6 +559,78 @@ button {
   gap: 8px;
 }
 
+.eventList {
+  display: grid;
+  gap: 8px;
+}
+
+.eventItem {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 12px;
+  border: 1px solid #2f3a48;
+  border-radius: 8px;
+  padding: 11px;
+  color: inherit;
+  text-decoration: none;
+  background: #0f1520;
+}
+
+.eventDate {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  border-right: 1px solid #2f3a48;
+  padding-right: 10px;
+}
+
+.eventDate strong {
+  color: #a5d6ff;
+  font-size: 20px;
+}
+
+.eventDate span {
+  color: #8b949e;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.eventMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.eventMeta span {
+  border: 1px solid #2f3a48;
+  border-radius: 999px;
+  padding: 2px 7px;
+  color: #8b949e;
+  font-size: 11px;
+}
+
+.eventItem strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.eventItem em {
+  display: block;
+  margin-top: 5px;
+  color: #a5d6ff;
+  font-size: 12px;
+  font-style: normal;
+}
+
+.eventItem p {
+  margin: 7px 0 0;
+  color: #c9d1d9;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .emptyState {
   border: 1px solid #2f3a48;
   border-radius: 8px;
@@ -606,6 +721,10 @@ button {
 
   .allocations {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tickerGrid {
+    grid-template-columns: 1fr;
   }
 
   .inputs,
