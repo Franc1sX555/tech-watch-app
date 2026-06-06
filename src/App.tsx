@@ -6,6 +6,7 @@ import {
   type MarketSnapshot,
   type SnapshotResult,
 } from "./data";
+import { loadOkxAccountSnapshot, type OkxAccountSnapshot } from "./account";
 import { majorEvents } from "./events";
 import { fallbackNews, loadNewsItems, type NewsItem } from "./news";
 import "./index.css";
@@ -255,6 +256,7 @@ function buildResult(snapshot: MarketSnapshot) {
 }
 
 function App() {
+  const [activeTab, setActiveTab] = useState<"market" | "account">("market");
   const [openCluster, setOpenCluster] = useState<string | null>(null);
   const [marketResult, setMarketResult] = useState<SnapshotResult>({
     snapshot: fallbackSnapshot,
@@ -267,6 +269,18 @@ function App() {
   const [newsSource, setNewsSource] = useState("初始备用资讯");
   const [newsErrors, setNewsErrors] = useState<string[]>([]);
   const [newsPage, setNewsPage] = useState(0);
+  const [accountResult, setAccountResult] = useState<OkxAccountSnapshot>({
+    configured: false,
+    fetchedAt: new Date().toISOString(),
+    totalEq: null,
+    adjEq: null,
+    availEq: null,
+    imr: null,
+    mmr: null,
+    notionalUsd: null,
+    positions: [],
+    errors: ["OKX只读API尚未配置"],
+  });
   const [showAllEvents, setShowAllEvents] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [accountValue, setAccountValue] = useState(10_000);
@@ -290,8 +304,19 @@ function App() {
     }
   }
 
+  async function refreshAccountData() {
+    setIsRefreshing(true);
+    try {
+      const next = await loadOkxAccountSnapshot();
+      setAccountResult(next);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }
+
   useEffect(() => {
     void refreshMarketData();
+    void refreshAccountData();
   }, []);
 
   const snapshot = marketResult.snapshot;
@@ -355,7 +380,9 @@ function App() {
   }, [newsItems, newsPage]);
   const visibleEvents = showAllEvents ? majorEvents : majorEvents.slice(0, 5);
 
-  const updatedAtText = marketResult.fetchedAt.toLocaleTimeString("zh-CN", {
+  const currentFetchedAt =
+    activeTab === "market" ? marketResult.fetchedAt : new Date(accountResult.fetchedAt);
+  const updatedAtText = currentFetchedAt.toLocaleTimeString("zh-CN", {
     hour12: false,
     hour: "2-digit",
     minute: "2-digit",
@@ -364,10 +391,16 @@ function App() {
 
   return (
     <main className="app">
+      {activeTab === "market" ? (
+        <>
       <section className="hero">
         <div className="heroMeta">
           <div className="eyebrow">AI基础设施3x TradFi盯盘</div>
-          <button className="refreshButton" disabled={isRefreshing} onClick={refreshMarketData}>
+          <button
+            className="refreshButton"
+            disabled={isRefreshing}
+            onClick={activeTab === "market" ? refreshMarketData : refreshAccountData}
+          >
             {isRefreshing ? "刷新中" : "刷新"} {updatedAtText}
           </button>
         </div>
@@ -601,6 +634,101 @@ function App() {
           </div>
         )}
       </section>
+        </>
+      ) : (
+        <>
+          <section className="hero">
+            <div className="heroMeta">
+              <div className="eyebrow">OKX账户监控</div>
+              <button className="refreshButton" disabled={isRefreshing} onClick={refreshAccountData}>
+                {isRefreshing ? "刷新中" : "刷新"} {updatedAtText}
+              </button>
+            </div>
+            <div className="accountHeroGrid">
+              <div>
+                <span>账户总权益</span>
+                <strong>{accountResult.totalEq == null ? "--" : formatMoney(accountResult.totalEq)}</strong>
+              </div>
+              <div>
+                <span>可用权益</span>
+                <strong>{accountResult.availEq == null ? "--" : formatMoney(accountResult.availEq)}</strong>
+              </div>
+              <div>
+                <span>已用初始保证金</span>
+                <strong>{accountResult.imr == null ? "--" : formatMoney(accountResult.imr)}</strong>
+              </div>
+            </div>
+            <div className="briefing">
+              <p>
+                当前账户页为只读监控版，只读取余额和持仓，不包含下单权限。若尚未在 Netlify 配置 OKX
+                只读API密钥，下面会显示未配置状态。
+              </p>
+              <p className={accountResult.errors.length > 0 ? "dataSource warn" : "dataSource"}>
+                数据源：{accountResult.configured ? "OKX账户API" : "OKX账户API未配置"}
+                {accountResult.errors.length > 0 ? `；提示：${accountResult.errors.join("；")}` : ""}
+              </p>
+            </div>
+          </section>
+
+          <section className="panel">
+            <h2>OKX持仓监控</h2>
+            {accountResult.positions.length === 0 ? (
+              <div className="emptyState">
+                暂未读取到持仓。若你已有持仓，请确认 Netlify 环境变量已配置只读 OKX API Key，并点击刷新。
+              </div>
+            ) : (
+              accountResult.positions.map((position) => (
+                <div className="row" key={`${position.instId}-${position.side}`}>
+                  <div>
+                    <strong>
+                      {position.instId} · {position.side}
+                    </strong>
+                    <span>
+                      数量 {position.pos} / 均价 {position.avgPx ?? "--"} / 标记 {position.markPx ?? "--"} / 杠杆{" "}
+                      {position.lever || "--"}
+                    </span>
+                  </div>
+                  <b className={position.upl >= 0 ? "up" : "down"}>
+                    {formatMoney(position.upl)}
+                    {position.uplRatio == null ? "" : ` (${formatPct(position.uplRatio * 100)})`}
+                  </b>
+                </div>
+              ))
+            )}
+          </section>
+
+          <section className="panel">
+            <h2>下单操作建议</h2>
+            <p className="hint">
+              当前阶段只做监控和建议，不调用交易接口。后续若启用交易权限，应只允许限价单、单笔限额、二次确认和完整订单日志。
+            </p>
+            {rebalanceRows
+              .filter((row) => row.name !== "CASH")
+              .map((row) => (
+                <div className="row" key={`account-${row.name}`}>
+                  <div>
+                    <strong>{row.name}</strong>
+                    <span>
+                      目标 {row.target}% / 当前录入 {row.current.toFixed(1)}%；建议用于和OKX真实持仓交叉核对
+                    </span>
+                  </div>
+                  <b className={row.diffPct > 0 ? "up" : row.diffPct < 0 ? "down" : ""}>{row.suggestion}</b>
+                </div>
+              ))}
+          </section>
+        </>
+      )}
+
+      <nav className="bottomNav">
+        <button className={activeTab === "market" ? "active" : ""} onClick={() => setActiveTab("market")}>
+          <strong>市场</strong>
+          <span>行情/评分/资讯</span>
+        </button>
+        <button className={activeTab === "account" ? "active" : ""} onClick={() => setActiveTab("account")}>
+          <strong>账户</strong>
+          <span>OKX/持仓/建议</span>
+        </button>
+      </nav>
     </main>
   );
 }

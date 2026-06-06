@@ -19,6 +19,11 @@
   status = 200
 
 [[redirects]]
+  from = "/account/summary"
+  to = "/.netlify/functions/okx-account"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
