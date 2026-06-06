@@ -284,11 +284,6 @@ function App() {
   const [showAllEvents, setShowAllEvents] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [accountValue, setAccountValue] = useState(10_000);
-  const [currentPositions, setCurrentPositions] = useState<Record<CoreSymbol, number>>({
-    VRT: 2000,
-    MRVL: 1800,
-    COHR: 1900,
-  });
 
   async function refreshMarketData() {
     setIsRefreshing(true);
@@ -353,15 +348,26 @@ function App() {
       change: snapshot.smhChange,
     },
   ];
-  const currentInvested = coreSymbols.reduce((sum, symbol) => sum + currentPositions[symbol], 0);
-  const currentCashValue = Math.max(0, accountValue - currentInvested);
+  const accountEquity = accountResult.totalEq ?? accountValue;
+  const okxPositionValues = useMemo(() => {
+    const values: Record<CoreSymbol, number> = { VRT: 0, MRVL: 0, COHR: 0 };
+    accountResult.positions.forEach((position) => {
+      const symbol = coreSymbols.find((item) => position.instId.toUpperCase().includes(item));
+      if (!symbol) return;
+      const markPx = position.markPx ?? position.avgPx ?? 0;
+      values[symbol] += Math.abs(position.pos * markPx);
+    });
+    return values;
+  }, [accountResult.positions]);
+  const currentInvested = coreSymbols.reduce((sum, symbol) => sum + okxPositionValues[symbol], 0);
+  const currentCashValue = Math.max(0, accountEquity - currentInvested);
 
   const rebalanceRows = useMemo(() => {
     return [...coreSymbols, "CASH" as const].map((name) => {
-      const currentValue = name === "CASH" ? currentCashValue : currentPositions[name];
-      const current = accountValue > 0 ? (currentValue / accountValue) * 100 : 0;
+      const currentValue = name === "CASH" ? currentCashValue : okxPositionValues[name];
+      const current = accountEquity > 0 ? (currentValue / accountEquity) * 100 : 0;
       const target = result.target[name];
-      const targetValue = (accountValue * target) / 100;
+      const targetValue = (accountEquity * target) / 100;
       const diffPct = target - current;
       const tradeValue = targetValue - currentValue;
       let suggestion = "不动";
@@ -369,7 +375,7 @@ function App() {
       if (diffPct <= -3) suggestion = `卖出 ${formatMoney(Math.abs(tradeValue))}`;
       return { name, current, currentValue, target, targetValue, diffPct, suggestion };
     });
-  }, [accountValue, currentCashValue, currentPositions, result.target]);
+  }, [accountEquity, currentCashValue, okxPositionValues, result.target]);
 
   const visibleNews = useMemo(() => {
     if (newsItems.length <= 3) return newsItems;
@@ -536,48 +542,6 @@ function App() {
       </section>
 
       <section className="panel">
-        <h2>调仓助手</h2>
-        <p className="hint">
-          输入账户总资产和当前每个合约的持仓金额。系统会自动计算当前占比，并换算每个TradFi合约应买入或卖出的金额。
-        </p>
-        <label className="assetInput">
-          <span>账户总资产规模（USDT）</span>
-          <input min="0" type="number" value={accountValue} onChange={(event) => setAccountValue(Number(event.target.value || 0))} />
-        </label>
-        <div className="inputs">
-          {coreSymbols.map((symbol) => (
-            <label key={symbol}>
-              <span>{symbol}持仓USDT</span>
-              <input
-                min="0"
-                type="number"
-                value={currentPositions[symbol]}
-                onChange={(event) =>
-                  setCurrentPositions((prev) => ({
-                    ...prev,
-                    [symbol]: Number(event.target.value || 0),
-                  }))
-                }
-              />
-            </label>
-          ))}
-        </div>
-        {rebalanceRows.map((row) => (
-          <div className="row" key={row.name}>
-            <div>
-              <strong>{row.name === "CASH" ? "空仓/现金" : row.name}</strong>
-              <span>
-                当前 {formatMoney(row.currentValue)} ({row.current.toFixed(1)}%) / 目标 {formatMoney(row.targetValue)} (
-                {row.target}%)
-                {row.name !== "CASH" ? ` / ${stopLines[row.name]}` : ""}
-              </span>
-            </div>
-            <b className={row.diffPct > 0 ? "up" : row.diffPct < 0 ? "down" : ""}>{row.suggestion}</b>
-          </div>
-        ))}
-      </section>
-
-      <section className="panel">
         <div className="panelHeader">
           <h2>重大事件日历</h2>
           <button className="miniButton" onClick={() => setShowAllEvents((value) => !value)}>
@@ -700,7 +664,8 @@ function App() {
           <section className="panel">
             <h2>下单操作建议</h2>
             <p className="hint">
-              当前阶段只做监控和建议，不调用交易接口。后续若启用交易权限，应只允许限价单、单笔限额、二次确认和完整订单日志。
+              基于OKX读取到的账户总权益和当前持仓名义金额计算。当前阶段只做监控和建议，不调用交易接口。
+              后续若启用交易权限，应只允许限价单、单笔限额、二次确认和完整订单日志。
             </p>
             {rebalanceRows
               .filter((row) => row.name !== "CASH")
