@@ -36,12 +36,6 @@ const symbolNames: Record<CoreSymbol, string> = {
   COHR: "光通信与光子器件",
 };
 
-const stopLines: Record<CoreSymbol, string> = {
-  VRT: "跌破20日线减仓，财报前不满仓追涨",
-  MRVL: "跌破相对SMH强势减仓，财报前控制杠杆",
-  COHR: "波动最大，跌破短期支撑先减半",
-};
-
 function boolScore(passed: boolean, points: number) {
   return passed ? points : 0;
 }
@@ -283,7 +277,7 @@ function App() {
   });
   const [showAllEvents, setShowAllEvents] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [accountValue, setAccountValue] = useState(10_000);
+  const [accountValue] = useState(10_000);
 
   async function refreshMarketData() {
     setIsRefreshing(true);
