@@ -389,7 +389,11 @@ function App() {
       const diffPct = target - current;
       const tradeValue = targetValue - currentValue;
       let suggestion = "不动";
-      if (diffPct >= 3) suggestion = `买入 ${formatMoney(tradeValue)}`;
+      if (diffPct >= 3) {
+        const isNewRiskPosition = name !== "CASH" && currentValue < targetValue * 0.25;
+        suggestion =
+          result.score < 55 && isNewRiskPosition ? "暂不新开" : `买入 ${formatMoney(tradeValue)}`;
+      }
       if (diffPct <= -3) suggestion = `卖出 ${formatMoney(Math.abs(tradeValue))}`;
       return { name, current, currentValue, target, targetValue, diffPct, suggestion };
     });
@@ -406,6 +410,43 @@ function App() {
 
   const currentFetchedAt =
     activeTab === "market" ? marketResult.fetchedAt : new Date(accountResult.fetchedAt);
+  const accountAdviceBriefing = useMemo(() => {
+    const vrtRow = rebalanceRows.find((row) => row.name === "VRT");
+    const mrvlRow = rebalanceRows.find((row) => row.name === "MRVL");
+    const cohrRow = rebalanceRows.find((row) => row.name === "COHR");
+    const activePositions = [vrtRow, mrvlRow, cohrRow].filter(
+      (row) => row && row.currentValue > 0,
+    ).length;
+    const totalCurrentExposure = [vrtRow, mrvlRow, cohrRow].reduce(
+      (sum, row) => sum + (row?.current ?? 0),
+      0,
+    );
+
+    if (!accountResult.configured) {
+      return [
+        "OKX只读API尚未配置完成，当前建议只能基于目标仓位模板显示，不能代表真实账户状态。",
+        "配置成功后，系统会用OKX返回的账户权益、保证金和持仓数据重新计算建议。",
+        "在未读取到真实仓位前，不建议按这里的金额执行交易。",
+      ];
+    }
+
+    const riskTone =
+      result.score >= 70 ? "市场评分偏强" : result.score >= 55 ? "市场评分中性" : "市场评分偏弱";
+    const buyPolicy =
+      result.score < 55
+        ? "由于评分低于55，缺失仓位不建议立刻补齐，优先动作是降低过度集中的仓位并保留现金。"
+        : "由于评分不弱，可以按目标权重小步修正仓位，但仍应避免一次性买满。";
+
+    return [
+      `${riskTone}，系统目标总3x暴露为 ${result.totalExposure.toFixed(2)}%，当前三只合计保证金占比约 ${totalCurrentExposure.toFixed(
+        2,
+      )}%。`,
+      `当前读取到 ${activePositions} 只核心持仓；如果主要集中在VRT，系统会先提示把单一持仓降到目标区间，避免组合被一只股票主导。`,
+      buyPolicy,
+      "这不是自动下单指令，而是按“总风险预算 + VRT/MRVL/COHR目标权重 + OKX实际保证金”计算出的再平衡参考。",
+    ];
+  }, [accountResult.configured, rebalanceRows, result.score, result.totalExposure]);
+
   const updatedAtText = currentFetchedAt.toLocaleTimeString("zh-CN", {
     hour12: false,
     hour: "2-digit",
@@ -689,6 +730,11 @@ function App() {
               基于OKX读取到的账户总权益和当前持仓名义金额计算。当前阶段只做监控和建议，不调用交易接口。
               后续若启用交易权限，应只允许限价单、单笔限额、二次确认和完整订单日志。
             </p>
+            <div className="adviceBriefing">
+              {accountAdviceBriefing.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+            </div>
             {rebalanceRows
               .filter((row) => row.name !== "CASH")
               .map((row) => (

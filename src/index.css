@@ -150,6 +150,21 @@ button {
   color: #f0c36a;
 }
 
+.adviceBriefing {
+  border: 1px solid #2f3a48;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: #0f1520;
+}
+
+.adviceBriefing p {
+  margin: 6px 0;
+  color: #c9d1d9;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .accountHeroGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
