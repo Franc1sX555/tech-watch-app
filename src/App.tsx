@@ -6,7 +6,7 @@ import {
   type MarketSnapshot,
   type SnapshotResult,
 } from "./data";
-import { loadOkxAccountSnapshot, type OkxAccountSnapshot } from "./account";
+import { loadOkxAccountSnapshot, type OkxAccountSnapshot, type OkxPosition } from "./account";
 import { majorEvents } from "./events";
 import { fallbackNews, loadNewsItems, type NewsItem } from "./news";
 import "./index.css";
@@ -48,8 +48,33 @@ function formatMoney(value: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(value);
+}
+
+function formatNumber(value: number | null) {
+  if (value == null || !Number.isFinite(value)) return "--";
+  return value.toFixed(2);
+}
+
+function positionNotionalValue(position: OkxPosition) {
+  if (position.notionalUsd != null && Number.isFinite(position.notionalUsd)) {
+    return Math.abs(position.notionalUsd);
+  }
+
+  const markPx = position.markPx ?? position.avgPx ?? 0;
+  return Math.abs(position.pos * markPx);
+}
+
+function positionMarginValue(position: OkxPosition) {
+  if (position.margin != null && Number.isFinite(position.margin)) {
+    return Math.abs(position.margin);
+  }
+
+  const leverage = Number(position.lever);
+  const notional = positionNotionalValue(position);
+  return leverage > 0 ? notional / leverage : notional;
 }
 
 function buildClusters(s: MarketSnapshot): Cluster[] {
@@ -348,8 +373,7 @@ function App() {
     accountResult.positions.forEach((position) => {
       const symbol = coreSymbols.find((item) => position.instId.toUpperCase().includes(item));
       if (!symbol) return;
-      const markPx = position.markPx ?? position.avgPx ?? 0;
-      values[symbol] += Math.abs(position.pos * markPx);
+      values[symbol] += positionMarginValue(position);
     });
     return values;
   }, [accountResult.positions]);
@@ -642,8 +666,12 @@ function App() {
                       {position.instId} · {position.side}
                     </strong>
                     <span>
-                      数量 {position.pos} / 均价 {position.avgPx ?? "--"} / 标记 {position.markPx ?? "--"} / 杠杆{" "}
-                      {position.lever || "--"}
+                      保证金 {formatMoney(positionMarginValue(position))} / 名义价值{" "}
+                      {formatMoney(positionNotionalValue(position))} / 数量 {formatNumber(position.pos)}
+                    </span>
+                    <span>
+                      均价 {formatNumber(position.avgPx)} / 标记 {formatNumber(position.markPx)} / 杠杆{" "}
+                      {position.lever || "--"} / 强平 {formatNumber(position.liqPx)}
                     </span>
                   </div>
                   <b className={position.upl >= 0 ? "up" : "down"}>
@@ -668,7 +696,9 @@ function App() {
                   <div>
                     <strong>{row.name}</strong>
                     <span>
-                      目标 {row.target}% / 当前录入 {row.current.toFixed(1)}%；建议用于和OKX真实持仓交叉核对
+                      当前保证金 {formatMoney(row.currentValue)} ({row.current.toFixed(2)}%) / 目标保证金{" "}
+                      {formatMoney(row.targetValue)} ({row.target.toFixed(2)}%) / 差额{" "}
+                      {formatMoney(row.targetValue - row.currentValue)}
                     </span>
                   </div>
                   <b className={row.diffPct > 0 ? "up" : row.diffPct < 0 ? "down" : ""}>{row.suggestion}</b>

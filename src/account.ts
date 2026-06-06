@@ -4,6 +4,8 @@ export type OkxPosition = {
   pos: number;
   avgPx: number | null;
   markPx: number | null;
+  margin: number | null;
+  notionalUsd: number | null;
   upl: number;
   uplRatio: number | null;
   lever: string;

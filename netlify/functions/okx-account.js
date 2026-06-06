@@ -84,6 +84,8 @@ exports.handler = async () => {
       pos: numberOrNull(position.pos) ?? 0,
       avgPx: numberOrNull(position.avgPx),
       markPx: numberOrNull(position.markPx),
+      margin: numberOrNull(position.margin),
+      notionalUsd: numberOrNull(position.notionalUsd),
       upl: numberOrNull(position.upl) ?? 0,
       uplRatio: numberOrNull(position.uplRatio),
       lever: position.lever || "",
